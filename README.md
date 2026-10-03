@@ -2,6 +2,19 @@
 
 Claude Code mod that redraws assistant messages as colored markdown.
 
+<table>
+  <tr>
+    <th align="center">Before</th>
+    <th align="center">After</th>
+  </tr>
+  <tr>
+    <td><img src="resources/claude.png" alt="Claude Code's default markdown rendering of examples/showcase.md"></td>
+    <td><img src="resources/claude-markdown-mod.png" alt="The same message rendered by md-render"></td>
+  </tr>
+</table>
+
+Both screenshots show the reply to "Print examples/showcase.md verbatim".
+
 | Markdown | Rendering |
 |---|---|
 | `# Heading` | bold purple |
