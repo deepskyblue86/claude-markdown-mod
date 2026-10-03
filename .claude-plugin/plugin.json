@@ -1,0 +1,11 @@
+{
+  "name": "md-render",
+  "version": "0.1.0",
+  "description": "Redraws assistant messages as styled markdown.",
+  "author": {
+    "name": "Angelo Puglisi"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/deepskyblue86/claude-markdown-mod",
+  "repository": "https://github.com/deepskyblue86/claude-markdown-mod"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "md-render-marketplace",
+  "owner": {
+    "name": "Angelo Puglisi"
+  },
+  "plugins": [
+    {
+      "name": "md-render",
+      "source": "./",
+      "description": "Redraws assistant messages as styled markdown."
+    }
+  ],
+  "description": "Claude Code mods by Angelo Puglisi."
+}
