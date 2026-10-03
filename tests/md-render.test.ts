@@ -100,6 +100,18 @@ describe('md-render', () => {
     expect(textOf(indented[0])).toContain('two')
   })
 
+  const blocksOf = (tree: Node) => walk(tree).find(n => n.type === 'Box' && n.props?.gap === 1)!.children as Node[]
+
+  test('an ordered list followed by a bullet list are two blocks', async $ => {
+    const blocks = blocksOf(await draw($, '1. one\n2. two\n\n- bullet\n  - nested'))
+    expect(blocks.map(textOf)).toEqual(['1. one2. two', '- bullet- nested'])
+  })
+
+  test('bullets nested under an ordered item stay in one list', async $ => {
+    const blocks = blocksOf(await draw($, '1. one\n   - nested\n2. two'))
+    expect(blocks).toHaveLength(1)
+  })
+
   test('quote has a dim bar and italic content', async $ => {
     const tree = await draw($, '> wise words')
     expect(styled(tree, { dimColor: true }).map(textOf)).toEqual([`${CONFIG.glyphs.quoteBar} `])

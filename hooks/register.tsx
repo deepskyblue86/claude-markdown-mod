@@ -192,8 +192,11 @@ function parseBlocks(src: string): Block[] {
 
     if (ITEM.test(line)) {
       const flat: { indent: number; item: Item }[] = []
+      const first = ITEM.exec(line)!
+      const isOrdered = (marker: string) => /^\d/.test(marker)
       while (i < lines.length) {
         const m = ITEM.exec(lines[i])
+        if (m && m[1].length === first[1].length && isOrdered(m[2]) !== isOrdered(first[2])) break
         if (m) {
           const marker = /^\d/.test(m[2]) ? m[2] : CONFIG.glyphs.bullet
           flat.push({ indent: m[1].length, item: { marker, text: m[3], children: [] } })
