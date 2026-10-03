@@ -26,14 +26,14 @@ A mod can't change the streamed text: `classic.MessageDisplay` is bypassed for u
 From a marketplace (this repo is one):
 
 ```
-claude plugin marketplace add <path-or-github-owner/repo>
+claude plugin marketplace add deepskyblue86/claude-markdown-mod
 claude plugin install md-render@md-render-marketplace
 ```
 
 Try it for one session without installing:
 
 ```
-claude --plugin-dir /path/to/md-render
+claude --plugin-dir /path/to/claude-markdown-mod
 ```
 
 ## Configure
