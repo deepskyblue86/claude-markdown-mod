@@ -77,6 +77,29 @@ describe('md-render', () => {
     expect(walk(await draw($, 'path C:\\')).map(textOf).join('')).not.toContain('undefined')
   })
 
+  test('a markdown link shows its text and the dim address', async $ => {
+    const tree = await draw($, 'see [the **docs**](https://example.com/x) now')
+    expect(styled(tree, { underline: true })).toHaveLength(0)
+    expect(styled(tree, { bold: true, color: color('orange') }).map(textOf)).toEqual(['docs'])
+    expect(styled(tree, { dimColor: true }).map(textOf)).toEqual([' (https://example.com/x)'])
+    expect(walk(tree).map(textOf).join('')).toContain('see the docs (https://example.com/x) now')
+  })
+
+  test('a link whose text is its address is not repeated', async $ => {
+    const tree = await draw($, '[https://a.io](https://a.io)')
+    expect(styled(tree, { dimColor: true })).toHaveLength(0)
+    expect(walk(tree).map(textOf).join('')).toContain('https://a.io')
+  })
+
+  test('images and half-typed links stay plain text', async $ => {
+    const image = await draw($, '![alt](https://a.io/i.png)')
+    expect(styled(image, { dimColor: true })).toHaveLength(0)
+    expect(walk(image).map(textOf).join('')).toContain('![alt](https://a.io/i.png)')
+    const partial = await draw($, 'see [the docs](https://exa')
+    expect(styled(partial, { dimColor: true })).toHaveLength(0)
+    expect(walk(partial).map(textOf).join('')).toContain('[the docs](https://exa')
+  })
+
   test('inline code is green', async $ => {
     const hit = styled(await draw($, 'run `make test` now'), { color: color('green') })
     expect(hit.map(textOf)).toEqual(['make test'])

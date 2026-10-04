@@ -16,6 +16,7 @@ export const CONFIG = {
     italic: { italic: true, color: 'amber' },
     code: { color: 'green' },
     strike: { strikethrough: true },
+    linkUrl: { dimColor: true },
     listMarker: { color: 'orange' },
     quoteBar: { dimColor: true },
     quote: { italic: true },
@@ -25,7 +26,7 @@ export const CONFIG = {
   debugTiming: false,
 }
 
-type Mark = 'bold' | 'italic' | 'code' | 'strike'
+type Mark = 'bold' | 'italic' | 'code' | 'strike' | 'linkUrl'
 type Run = { text: string; marks: Mark[] }
 type Item = { marker: string; text: string; children: Item[] }
 type Block =
@@ -35,6 +36,7 @@ type Block =
   | { kind: 'quote'; lines: string[] }
 
 const LINK = /^!?\[[^\]\n]*\]\([^)\n]*\)/
+const MD_LINK = /^\[([^\]\n]+)\]\(([^)\s]+)\)/
 const FENCE = /^\s*(`{3,})\s*([^\s`]*)/
 const HEADING = /^#{1,6}\s+(.*)$/
 const QUOTE = /^\s*>\s?(.*)$/
@@ -53,6 +55,7 @@ function parseInline(s: string, marks: Mark[] = []): Run[] {
   let i = 0
   while (i < s.length) {
     const ch = s[i]
+    const link = ch === '[' ? MD_LINK.exec(s.slice(i)) : null
 
     if (ch === '\\' && i + 1 < s.length && '\\`*'.includes(s[i + 1])) {
       buf += s[i + 1]
@@ -111,10 +114,15 @@ function parseInline(s: string, marks: Mark[] = []): Run[] {
       flush()
       out.push(...parseInline(s.slice(i + 1, end), [...marks, 'italic']))
       i = end + 1
+    } else if (link) {
+      flush()
+      out.push(...parseInline(link[1], marks))
+      if (link[1] !== link[2]) out.push({ text: ` (${link[2]})`, marks: [...marks, 'linkUrl'] })
+      i += link[0].length
     } else if (ch === '[' || ch === '!') {
-      const link = LINK.exec(s.slice(i))
-      buf += link ? link[0] : ch
-      i += link ? link[0].length : 1
+      const image = LINK.exec(s.slice(i))
+      buf += image ? image[0] : ch
+      i += image ? image[0].length : 1
     } else {
       buf += ch
       i += 1
