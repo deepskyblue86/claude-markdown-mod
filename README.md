@@ -26,7 +26,8 @@ Both screenshots show the reply to "Print examples/showcase.md verbatim".
 | `- item`, `1. item` | orange markers, nested lists indented |
 | `> quote` | dim `│` bar, italic text |
 | fenced code, tables | drawn by Claude Code's own renderer (syntax highlighting, wrapping) |
-| links, images, anything else | plain text |
+| `[text](url)` | the text followed by the dim address |
+| images, anything else | plain text |
 
 Unclosed `**`, `` ` ``, `~~`, or a fence (mid-stream) stay plain text until they close.
 If the message text can't be read or parsing throws, the default rendering is used.

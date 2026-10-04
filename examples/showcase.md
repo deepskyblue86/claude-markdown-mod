@@ -37,4 +37,4 @@ function greet(name: string): string {
 }
 ```
 
-A [link](https://example.com) stays plain text.
+A [link](https://example.com) shows its address beside the text.
