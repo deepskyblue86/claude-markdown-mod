@@ -26,7 +26,7 @@ Both screenshots show the reply to "Print examples/showcase.md verbatim".
 | `- item`, `1. item` | orange markers, nested lists indented |
 | `> quote` | dim `│` bar, italic text |
 | fenced code, tables | drawn by Claude Code's own renderer (syntax highlighting, wrapping) |
-| `[text](url)` | the text followed by the dim address |
+| `[text](url)` | the text as a clickable link (an OSC 8 hyperlink on a terminal, else the text then the dim address; an anchor on desktop). On desktop a reply with any link that is not `https:`, such as a file path, is drawn natively instead, so the link opens; that reply loses its colors |
 | images, anything else | plain text |
 
 Unclosed `**`, `` ` ``, `~~`, or a fence (mid-stream) stay plain text until they close.

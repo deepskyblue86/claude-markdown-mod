@@ -18,10 +18,10 @@ const textOf = (n: Node | string): string =>
 const color = (name: string) => CONFIG.colors[name]
 
 describe('md-render', () => {
-  const draw = async ($: any, text: unknown) => {
+  const draw = async ($: any, text: unknown, surface = 'terminal') => {
     const ui = await $.ui.mount({
       plugin: 'md-render',
-      surface: 'terminal',
+      surface,
       component: 'AssistantMessage',
       props: { text, isFirstOfReply: false },
     })
@@ -77,26 +77,40 @@ describe('md-render', () => {
     expect(walk(await draw($, 'path C:\\')).map(textOf).join('')).not.toContain('undefined')
   })
 
-  test('a markdown link shows its text and the dim address', async $ => {
+  test('a markdown link is one clickable Link around its styled text', async $ => {
     const tree = await draw($, 'see [the **docs**](https://example.com/x) now')
-    expect(styled(tree, { underline: true })).toHaveLength(0)
+    const links = walk(tree).filter(n => n.type === 'Link')
+    expect(links.map(n => n.props?.href)).toEqual(['https://example.com/x'])
+    expect(links.map(textOf)).toEqual(['the docs'])
     expect(styled(tree, { bold: true, color: color('orange') }).map(textOf)).toEqual(['docs'])
-    expect(styled(tree, { dimColor: true }).map(textOf)).toEqual([' (https://example.com/x)'])
-    expect(walk(tree).map(textOf).join('')).toContain('see the docs (https://example.com/x) now')
+    expect(walk(tree).map(textOf).join('')).toContain('see the docs now')
   })
 
-  test('a link whose text is its address is not repeated', async $ => {
-    const tree = await draw($, '[https://a.io](https://a.io)')
-    expect(styled(tree, { dimColor: true })).toHaveLength(0)
-    expect(walk(tree).map(textOf).join('')).toContain('https://a.io')
+  test('a link whose text is its address is a Link too', async $ => {
+    const links = walk(await draw($, '[https://a.io](https://a.io)')).filter(n => n.type === 'Link')
+    expect(links.map(n => [n.props?.href, textOf(n)])).toEqual([['https://a.io', 'https://a.io']])
+  })
+
+  test('on desktop a reply with a non-https link goes to the native renderer', async ($, on) => {
+    on('ui.render', { component: 'AssistantMessage' }, () => ({ type: 'Text', children: ['engine default'] }))
+    for (const src of ['see [notes](docs/notes.md)', 'see [x](http://a.io)', '| a |\n| - |\n| [f](f.md) |']) {
+      expect(textOf(await draw($, `**hi**\n\n${src}`, 'desktop'))).toBe('engine default')
+    }
+    const kept = await draw($, '**hi** [docs](https://a.io) and `[f](f.md)`', 'desktop')
+    expect(walk(kept).filter(n => n.type === 'Link').map(n => n.props?.href)).toEqual(['https://a.io'])
+  })
+
+  test('the terminal keeps a file link as a Link', async $ => {
+    const links = walk(await draw($, 'see [notes](docs/notes.md)')).filter(n => n.type === 'Link')
+    expect(links.map(n => n.props?.href)).toEqual(['docs/notes.md'])
   })
 
   test('images and half-typed links stay plain text', async $ => {
     const image = await draw($, '![alt](https://a.io/i.png)')
-    expect(styled(image, { dimColor: true })).toHaveLength(0)
+    expect(walk(image).filter(n => n.type === 'Link')).toHaveLength(0)
     expect(walk(image).map(textOf).join('')).toContain('![alt](https://a.io/i.png)')
     const partial = await draw($, 'see [the docs](https://exa')
-    expect(styled(partial, { dimColor: true })).toHaveLength(0)
+    expect(walk(partial).filter(n => n.type === 'Link')).toHaveLength(0)
     expect(walk(partial).map(textOf).join('')).toContain('[the docs](https://exa')
   })
 

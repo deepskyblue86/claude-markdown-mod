@@ -37,4 +37,4 @@ function greet(name: string): string {
 }
 ```
 
-A [link](https://example.com) shows its address beside the text.
+A [link](https://example.com) is clickable: an OSC 8 hyperlink where the terminal supports it, its address beside the text where it does not.
