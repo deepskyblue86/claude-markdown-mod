@@ -18,10 +18,10 @@ const textOf = (n: Node | string): string =>
 const color = (name: string) => CONFIG.colors[name]
 
 describe('md-render', () => {
-  const draw = async ($: any, text: unknown) => {
+  const draw = async ($: any, text: unknown, surface = 'terminal') => {
     const ui = await $.ui.mount({
       plugin: 'md-render',
-      surface: 'terminal',
+      surface,
       component: 'AssistantMessage',
       props: { text, isFirstOfReply: false },
     })
@@ -89,6 +89,20 @@ describe('md-render', () => {
   test('a link whose text is its address is a Link too', async $ => {
     const links = walk(await draw($, '[https://a.io](https://a.io)')).filter(n => n.type === 'Link')
     expect(links.map(n => [n.props?.href, textOf(n)])).toEqual([['https://a.io', 'https://a.io']])
+  })
+
+  test('on desktop a reply with a non-https link goes to the native renderer', async ($, on) => {
+    on('ui.render', { component: 'AssistantMessage' }, () => ({ type: 'Text', children: ['engine default'] }))
+    for (const src of ['see [notes](docs/notes.md)', 'see [x](http://a.io)', '| a |\n| - |\n| [f](f.md) |']) {
+      expect(textOf(await draw($, `**hi**\n\n${src}`, 'desktop'))).toBe('engine default')
+    }
+    const kept = await draw($, '**hi** [docs](https://a.io) and `[f](f.md)`', 'desktop')
+    expect(walk(kept).filter(n => n.type === 'Link').map(n => n.props?.href)).toEqual(['https://a.io'])
+  })
+
+  test('the terminal keeps a file link as a Link', async $ => {
+    const links = walk(await draw($, 'see [notes](docs/notes.md)')).filter(n => n.type === 'Link')
+    expect(links.map(n => n.props?.href)).toEqual(['docs/notes.md'])
   })
 
   test('images and half-typed links stay plain text', async $ => {

@@ -236,6 +236,22 @@ function parseBlocks(src: string): Block[] {
   return blocks
 }
 
+const TABLE_LINK = /\[[^\]\n]+\]\(([^)\s]+)\)/g
+
+// Every link target the reply draws: inline ones as parsed, and those in a
+// table, which the native Markdown draws. Links in fenced code are not links.
+function linkHrefs(blocks: Block[]): string[] {
+  const itemTexts = (items: Item[]): string[] => items.flatMap(it => [it.text, ...itemTexts(it.children)])
+  const texts = blocks.flatMap(b =>
+    b.kind === 'heading' || b.kind === 'para' ? [b.text] : b.kind === 'list' ? itemTexts(b.items) : b.kind === 'quote' ? b.lines : [],
+  )
+  const inline = texts.flatMap(t => parseInline(t).flatMap(run => (run.href ? [run.href] : [])))
+  const tables = blocks.flatMap(b =>
+    b.kind === 'native' && !FENCE.test(b.raw) ? [...b.raw.matchAll(TABLE_LINK)].map(m => m[1]!) : [],
+  )
+  return [...inline, ...tables]
+}
+
 const paint = (style: Style): Style =>
   style.color ? { ...style, color: CONFIG.colors[style.color] ?? style.color } : style
 
@@ -251,6 +267,10 @@ export const register: Register = on => {
       const blocks = parseBlocks(text)
       const t1 = performance.now()
       if (blocks.length === 0) return next(e)
+      // A remote surface (desktop) draws only https: links as links. A reply
+      // with any other link, such as a file path, goes to the native renderer,
+      // which opens it, at the cost of this reply's colors.
+      if (e.surface !== 'terminal' && linkHrefs(blocks).some(href => !href.startsWith('https:'))) return next(e)
 
       const { Box, Text, Markdown, Link } = $.ui.resolve(e)
       const { styles, glyphs, indent } = CONFIG
