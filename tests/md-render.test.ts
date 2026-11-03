@@ -77,26 +77,26 @@ describe('md-render', () => {
     expect(walk(await draw($, 'path C:\\')).map(textOf).join('')).not.toContain('undefined')
   })
 
-  test('a markdown link shows its text and the dim address', async $ => {
+  test('a markdown link is one clickable Link around its styled text', async $ => {
     const tree = await draw($, 'see [the **docs**](https://example.com/x) now')
-    expect(styled(tree, { underline: true })).toHaveLength(0)
+    const links = walk(tree).filter(n => n.type === 'Link')
+    expect(links.map(n => n.props?.href)).toEqual(['https://example.com/x'])
+    expect(links.map(textOf)).toEqual(['the docs'])
     expect(styled(tree, { bold: true, color: color('orange') }).map(textOf)).toEqual(['docs'])
-    expect(styled(tree, { dimColor: true }).map(textOf)).toEqual([' (https://example.com/x)'])
-    expect(walk(tree).map(textOf).join('')).toContain('see the docs (https://example.com/x) now')
+    expect(walk(tree).map(textOf).join('')).toContain('see the docs now')
   })
 
-  test('a link whose text is its address is not repeated', async $ => {
-    const tree = await draw($, '[https://a.io](https://a.io)')
-    expect(styled(tree, { dimColor: true })).toHaveLength(0)
-    expect(walk(tree).map(textOf).join('')).toContain('https://a.io')
+  test('a link whose text is its address is a Link too', async $ => {
+    const links = walk(await draw($, '[https://a.io](https://a.io)')).filter(n => n.type === 'Link')
+    expect(links.map(n => [n.props?.href, textOf(n)])).toEqual([['https://a.io', 'https://a.io']])
   })
 
   test('images and half-typed links stay plain text', async $ => {
     const image = await draw($, '![alt](https://a.io/i.png)')
-    expect(styled(image, { dimColor: true })).toHaveLength(0)
+    expect(walk(image).filter(n => n.type === 'Link')).toHaveLength(0)
     expect(walk(image).map(textOf).join('')).toContain('![alt](https://a.io/i.png)')
     const partial = await draw($, 'see [the docs](https://exa')
-    expect(styled(partial, { dimColor: true })).toHaveLength(0)
+    expect(walk(partial).filter(n => n.type === 'Link')).toHaveLength(0)
     expect(walk(partial).map(textOf).join('')).toContain('[the docs](https://exa')
   })
 

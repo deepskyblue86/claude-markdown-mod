@@ -16,7 +16,6 @@ export const CONFIG = {
     italic: { italic: true, color: 'amber' },
     code: { color: 'green' },
     strike: { strikethrough: true },
-    linkUrl: { dimColor: true },
     listMarker: { color: 'orange' },
     quoteBar: { dimColor: true },
     quote: { italic: true },
@@ -26,8 +25,9 @@ export const CONFIG = {
   debugTiming: false,
 }
 
-type Mark = 'bold' | 'italic' | 'code' | 'strike' | 'linkUrl'
-type Run = { text: string; marks: Mark[] }
+type Mark = 'bold' | 'italic' | 'code' | 'strike'
+// href: the run is (part of) a link's text.
+type Run = { text: string; marks: Mark[]; href?: string }
 type Item = { marker: string; text: string; children: Item[] }
 type Block =
   | { kind: 'heading' | 'para' | 'plain'; text: string }
@@ -116,8 +116,7 @@ function parseInline(s: string, marks: Mark[] = []): Run[] {
       i = end + 1
     } else if (link) {
       flush()
-      out.push(...parseInline(link[1], marks))
-      if (link[1] !== link[2]) out.push({ text: ` (${link[2]})`, marks: [...marks, 'linkUrl'] })
+      out.push(...parseInline(link[1], marks).map(run => ({ ...run, href: link[2] })))
       i += link[0].length
     } else if (ch === '[' || ch === '!') {
       const image = LINK.exec(s.slice(i))
@@ -253,18 +252,33 @@ export const register: Register = on => {
       const t1 = performance.now()
       if (blocks.length === 0) return next(e)
 
-      const { Box, Text, Markdown } = $.ui.resolve(e)
+      const { Box, Text, Markdown, Link } = $.ui.resolve(e)
       const { styles, glyphs, indent } = CONFIG
 
-      const inline = (src: string, base: Style = {}) => (
-        <Text {...paint(base)}>
-          {parseInline(src).map(run => {
-            const style: Style = {}
-            for (const mark of run.marks) Object.assign(style, styles[mark])
-            return Object.keys(style).length ? <Text {...paint(style)}>{run.text}</Text> : run.text
-          })}
-        </Text>
-      )
+      const styled = (run: Run) => {
+        const style: Style = {}
+        for (const mark of run.marks) Object.assign(style, styles[mark])
+        return Object.keys(style).length ? <Text {...paint(style)}>{run.text}</Text> : run.text
+      }
+
+      // A link's runs go in one Link, so its text stays one clickable span: an
+      // OSC 8 hyperlink on a terminal (else its text then the dim address), an
+      // anchor on desktop.
+      const inline = (src: string, base: Style = {}) => {
+        const parts: unknown[] = []
+        const runs = parseInline(src)
+        for (let i = 0; i < runs.length; ) {
+          const href = runs[i].href
+          if (!href) {
+            parts.push(styled(runs[i++]))
+            continue
+          }
+          const text: unknown[] = []
+          while (i < runs.length && runs[i].href === href) text.push(styled(runs[i++]))
+          parts.push(<Link href={href}>{text}</Link>)
+        }
+        return <Text {...paint(base)}>{parts}</Text>
+      }
 
       const item = (it: Item) => (
         <Box flexDirection="row">
